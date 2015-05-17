@@ -5,6 +5,6 @@ plot(x, y, '*')
 xlabel('height')
 ylabel('age')
 x = [ones(size(x), 1), x];
-w = inv(x' * x) * x' * y
+w = inv(x' * x) * x' * y;
 hold on
-plot(x(:, 2), 0.0639*x(:, 2) + 0.7502)
+plot(x(:, 2), x * w)
