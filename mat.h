@@ -3,6 +3,7 @@
 #define MAT_H
 
 #include <iostream>
+#include <cmath>
 
 using namespace std;
 
@@ -191,6 +192,24 @@ Mat& operator -(const Mat& M1, const Mat& M2)
 	return *pM_res;
 }
 
+Mat& operator -(const double& s, const Mat& M2)
+{
+	if(M2.data == NULL)
+	{
+		cerr << "M2 has no data" << endl;
+		exit(0);
+	}
+	Mat* pM_res = new Mat(M2.row, M2.col);
+	for(int i = 0; i < pM_res->row; i++)
+	{
+		for(int j = 0; j < pM_res->col; j++)
+		{
+			pM_res->data[i][j] = s - M2.data[i][j];
+		}
+	}
+	return *pM_res;
+}
+
 Mat& operator *(const Mat& M1, const Mat& M2)
 {
 	if(M1.data == NULL || M2.data == NULL)
@@ -277,4 +296,43 @@ Mat MProduct(const Mat& M1, const Mat& M2)
 	}
 	return M_res;
 }
+
+Mat& MSigmoid(const Mat& M)
+{
+	if(M.data == NULL)
+	{
+		cerr << "Matrix has no data" << endl;
+		exit(0);
+	}
+	Mat *pM_res = new Mat(M.row, M.col);
+	for(int i = 0; i < pM_res->row; i++)
+	{
+		for(int j = 0; j < pM_res->col; j++)
+		{
+			pM_res->data[i][j] = 1.0 / (1.0 + exp(-M.data[i][j]));
+		}
+	}
+	return *pM_res;
+}
+
+Mat& MDiag(const Mat& M)
+{
+	if(M.data == NULL)
+	{
+		cerr << "Matrix has no data" << endl;
+		exit(0);
+	}
+	if(M.col != 1)
+	{
+		cerr << "Matrix is not cvector" << endl;
+		exit(0);
+	}
+	Mat* pMat_res = new Mat(M.row, M.row);
+	for(int i = 0; i < pMat_res->row; i++)
+	{
+		pMat_res->data[i][i] = M.data[i][0];
+	}
+	return *pMat_res;
+}
+
 #endif
