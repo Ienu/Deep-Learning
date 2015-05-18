@@ -144,6 +144,53 @@ Mat& MInv(const Mat& M)
 	}
 	return *pM_res;
 }
+
+Mat& operator +(const Mat& M1, const Mat& M2)
+{
+	if(M1.data == NULL || M2.data == NULL)
+	{
+		cerr << "M1 or M2 has no data" << endl;
+		exit(0);
+	}
+	if(M1.row != M2.row || M1.col != M2.col)
+	{
+		cerr << "Matrix dimension do not match" << endl;
+		exit(0);
+	}
+	Mat* pM_res = new Mat(M1.row, M1.col);
+	for(int i = 0; i < pM_res->row; i++)
+	{
+		for(int j = 0; j < pM_res->col; j++)
+		{
+			pM_res->data[i][j] = M1.data[i][j] + M2.data[i][j];
+		}
+	}
+	return *pM_res;
+}
+
+Mat& operator -(const Mat& M1, const Mat& M2)
+{
+	if(M1.data == NULL || M2.data == NULL)
+	{
+		cerr << "M1 or M2 has no data" << endl;
+		exit(0);
+	}
+	if(M1.row != M2.row || M1.col != M2.col)
+	{
+		cerr << "Matrix dimension do not match" << endl;
+		exit(0);
+	}
+	Mat* pM_res = new Mat(M1.row, M1.col);
+	for(int i = 0; i < pM_res->row; i++)
+	{
+		for(int j = 0; j < pM_res->col; j++)
+		{
+			pM_res->data[i][j] = M1.data[i][j] - M2.data[i][j];
+		}
+	}
+	return *pM_res;
+}
+
 Mat& operator *(const Mat& M1, const Mat& M2)
 {
 	if(M1.data == NULL || M2.data == NULL)
@@ -165,6 +212,25 @@ Mat& operator *(const Mat& M1, const Mat& M2)
 			{
 				pM_res->data[i][j] += M1.data[i][k] * M2.data[k][j];
 			}
+		}
+	}
+	return *pM_res;
+}
+
+Mat& operator *(const double& s, const Mat& M2)
+{
+	if(M2.data == NULL)
+	{
+		cerr << "M2 has no data" << endl;
+		exit(0);
+	}
+
+	Mat* pM_res = new Mat(M2.row, M2.col);
+	for(int i = 0; i < pM_res->row; i++)
+	{
+		for(int j = 0; j < pM_res->col; j++)
+		{
+			pM_res->data[i][j] = s * M2.data[i][j];
 		}
 	}
 	return *pM_res;
