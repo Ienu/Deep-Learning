@@ -3,6 +3,7 @@
 #define MAT_H
 
 #include <iostream>
+#include <fstream>
 #include <cmath>
 
 using namespace std;
@@ -24,9 +25,63 @@ public:
 	bool QR(Mat& Q, Mat& R);
 	
 	Mat(int row, int col);
+	Mat(int row, int col, double** d_data);
+	
 	~Mat();
 	
 };
+
+double** MReadFile(const char filename[], const int& row, const int& col)
+{
+	if(row <= 0 || col <= 0)
+	{
+		cerr << "row or col <= 0" << endl;
+		exit(0);
+	}
+	if(filename == 0)
+	{
+		cerr << "filename error" << endl;
+		exit(0);
+	}
+	ifstream in(filename);
+	double** data = new double*[row];
+	for(int i = 0; i < row; i++)
+	{
+		data[i] = new double[col];
+		for(int j = 0; j < col; j++)
+		{
+			in >> data[i][j];
+		}
+	}
+	in.close();
+	return data;
+}
+
+Mat::Mat(int row, int col, double** d_data)
+{
+	if(row <= 0 || col <= 0)
+	{
+		cerr << "row or col <= 0" << endl;
+		exit(0);
+	}
+	if(d_data == NULL)
+	{
+		cerr << "Data is NULL" << endl;
+		exit(0);
+	}
+	this->row = row;
+	this->col = col;
+	
+	data = new double*[row];
+	for(int i = 0; i < row; i++)
+	{
+		data[i] = new double[col];
+		for(int j = 0; j < col; j++)
+		{
+			data[i][j] = d_data[i][j];
+		}
+	}
+}
 Mat& MEye(const int& n)
 {
 	if(n <= 0)
@@ -369,7 +424,7 @@ bool Mat::QR(Mat& Q, Mat& R)
 	M_A = *this;
 	Q = MEye(n);
 	Mat M_H(n, n);
-
+	
 	for(int k = 0; k < n; k++)
 	{
 		double sigma = -1;
