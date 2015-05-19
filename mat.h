@@ -18,13 +18,44 @@ public:
 	
 public:
 	
-	Mat& operator =(const Mat& M);	
-	void MShow();	
+	Mat& operator = (const Mat& M);	
+	double* & operator [] (const int& index);
+	void MShow();
+	bool QR(Mat& Q, Mat& R);
+	
 	Mat(int row, int col);
 	~Mat();
 	
 };
+Mat& MEye(const int& n)
+{
+	if(n <= 0)
+	{
+		cerr << "n <= 0" << endl;
+		exit(0);
+	}
+	Mat* pM_res = new Mat(n, n);
+	for(int i = 0; i < n; i++)
+	{
+		pM_res->data[i][i] = 1;
+	}
+	return *pM_res;
+}
 
+double* & Mat::operator [] (const int& index)
+{
+	if(data == NULL)
+	{
+		cerr << "Matrix has no data" << endl;
+		exit(0);
+	}
+	if(index < 0 || index >= row)
+	{
+		cerr << "Index exceed dimension" << endl;
+		exit(0);
+	}
+	return data[index];
+}
 Mat::Mat(int row, int col)
 {
 	if(row <= 0 || col <= 0)
@@ -243,7 +274,7 @@ Mat& operator *(const double& s, const Mat& M2)
 		cerr << "M2 has no data" << endl;
 		exit(0);
 	}
-
+	
 	Mat* pM_res = new Mat(M2.row, M2.col);
 	for(int i = 0; i < pM_res->row; i++)
 	{
@@ -270,31 +301,6 @@ Mat& MTrans(const Mat& M)
 		}
 	}
 	return *pM_res;
-}
-Mat MProduct(const Mat& M1, const Mat& M2)
-{
-	if(M1.data == NULL || M2.data == NULL)
-	{
-		cerr << "M1 or M2 has no data" << endl;
-		exit(0);
-	}
-	if(M1.col != M2.row)
-	{
-		cerr << "Matrix dimension do not match" << endl;
-		exit(0);
-	}
-	Mat M_res(M1.row, M2.col);
-	for(int i = 0; i < M_res.row; i++)
-	{
-		for(int j = 0; j < M_res.col; j++)
-		{
-			for(int k = 0; k < M1.col; k++)
-			{
-				M_res.data[i][j] += M1.data[i][k] * M2.data[k][j];
-			}
-		}
-	}
-	return M_res;
 }
 
 Mat& MSigmoid(const Mat& M)
@@ -333,6 +339,64 @@ Mat& MDiag(const Mat& M)
 		pMat_res->data[i][i] = M.data[i][0];
 	}
 	return *pMat_res;
+}
+
+bool Mat::QR(Mat& Q, Mat& R)
+{
+	if(data == NULL)
+	{
+		cerr << "Matrix has no data" << endl;
+		exit(0);
+	}
+	if(Q.data == NULL || R.data == NULL)
+	{
+		cerr << "Q or R has not init data" << endl;
+		exit(0);
+	}
+	if(row != col)
+	{
+		cerr << "Matrix is not square" << endl;
+		exit(0);
+	}
+	if(Q.row != Q.col || R.row != R.col || Q.row != row)
+	{
+		cerr << "Matrix dimension do not match" << endl;
+		exit(0);
+	}
+	
+	int n = row;
+	Mat M_A(n, n);
+	M_A = *this;
+	Q = MEye(n);
+	Mat M_H(n, n);
+
+	for(int k = 0; k < n; k++)
+	{
+		double sigma = -1;
+		if(M_A[k][k] >= 0)
+		{
+			sigma = 1;
+		}
+		double sum = 0;
+		for(int i = k; i < n; i++)
+		{
+			sum += M_A[i][k] * M_A[i][k];
+		}
+		sigma *= sqrt(sum);
+		double rou = sigma * (sigma + M_A[k][k]);
+		Mat M_U(n, 1);
+		M_U[k][0] = sigma + M_A[k][k];
+		for(int j = k + 1; j < n; j++)
+		{
+			M_U[j][0] = M_A[j][k];
+		}
+		M_H = MEye(n) - 1.0 / rou * M_U * MTrans(M_U);
+		M_A = M_H * M_A;
+		Q = Q * M_H;
+	}
+	R = M_A;
+	
+	return true;
 }
 
 #endif
