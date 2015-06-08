@@ -22,9 +22,13 @@ public:
 	
 public:
 	
-	Mat& operator = (const Mat& M);	
+	Mat& operator = (const Mat& M);		
 	Mat& operator *= (const double& s);
+	Mat& operator /= (const Mat& M);
 	Mat& operator += (const Mat& M);
+	Mat& operator -= (const Mat& M);
+
+	Mat All();
 	
 	double* & operator [] (const int& index);
 	
@@ -32,11 +36,13 @@ public:
 	void MShow();
 	bool QR(Mat& Q, Mat& R);
 	Mat SVD(Mat& U, Mat& W, Mat& V);
+	Mat Diag();
 	
 	Mat(const int& row, const int& col);
 	Mat(const int& row, const int& col, double** d_data);
-	
+
 	Mat(const Mat& M);
+	//Mat(double& d);
 	
 	Mat MSub(const int& li, const int& lj, const int& srow, const int& scol);
 	void MPub(const Mat& M, const int& li, const int& lj);
@@ -44,6 +50,67 @@ public:
 	~Mat();
 	
 };
+
+Mat Mat::All()
+{
+	if(data == NULL)
+	{
+		cerr << "All(): Matrix has no data" << endl;
+		exit(0);
+	}
+	Mat M_res(row * col, 1);
+	for(int i = 0; i < col; i++)
+	{
+		for(int j = 0; j < row; j++)
+		{
+			M_res.data[i * row + j][0] = data[j][i];
+		}
+	}
+	return M_res;
+}
+
+Mat operator == (const Mat& M, const double& s)
+{
+	if(M.data == NULL)
+	{
+		cerr << "operator == (): Matrix has no data" << endl;
+		exit(0);
+	}
+
+	Mat M_res(M.row, M.col);
+	for(int i = 0; i < M.row; i++)
+	{
+		for(int j = 0; j < M.col; j++)
+		{
+			M_res.data[i][j] = (M.data[i][j] == s);
+		}
+	}
+	return M_res;
+}
+
+Mat operator == (const Mat& M1, const Mat& M2)
+{
+	if(M1.data == NULL || M2.data == NULL)
+	{
+		cerr << "operator == (): Matrix has no data" << endl;
+		exit(0);
+	}
+	if(M1.row != M2.row || M2.col != M2.col)
+	{
+		cerr << "operator == (): Matrix dimension do not match" << endl;
+		exit(0);
+	}
+	Mat M_res(M1.row, M1.col);
+	for(int i = 0; i < M1.row; i++)
+	{
+		for(int j = 0; j < M1.col; j++)
+		{
+			M_res.data[i][j] = (M1.data[i][j] == M2.data[i][j]);
+		}
+	}
+	return M_res;
+}
+
 Mat::Mat(const Mat& M)
 {
 	if(M.data == NULL)
@@ -62,6 +129,22 @@ Mat::Mat(const Mat& M)
 			data[i][j] = M.data[i][j];
 		}
 	}
+}
+
+Mat Mat::Diag()
+{
+	if(data == NULL)
+	{
+		cerr << "Diag(): Matrix has no data" << endl;
+		exit(0);
+	}
+	int n = row > col ? col : row;
+	Mat M_res(n, 1);
+	for(int i = 0; i < n; i++)
+	{
+		M_res.data[i][0] = data[i][i];
+	}
+	return M_res;
 }
 
 Mat Mat::SVD(Mat& U, Mat& W, Mat& V)
@@ -144,6 +227,28 @@ Mat& Mat::operator += (const Mat& M)
 	return *this;
 }
 
+Mat& Mat::operator -= (const Mat& M)
+{
+	if(data == NULL || M.data == NULL)
+	{
+		cerr << "operator -= (): Matrix has no data" << endl;
+		exit(0);
+	}
+	if(row != M.row || col != M.col)
+	{
+		cerr << "operator -= (): Matrix dimension do not match" << endl;
+		exit(0);
+	}
+	for(int i = 0; i < row; i++)
+	{
+		for(int j = 0; j < col; j++)
+		{
+			data[i][j] -= M.data[i][j];
+		}
+	}
+	return *this;
+}
+
 Mat& Mat::operator *= (const double& s)
 {
 	if(data == NULL)
@@ -156,6 +261,35 @@ Mat& Mat::operator *= (const double& s)
 		for(int j = 0; j < col; j++)
 		{
 			data[i][j] *= s;
+		}
+	}
+	return *this;
+}
+
+Mat& Mat::operator /= (const Mat& M)
+{
+	if(data == NULL || M.data == NULL)
+	{
+		cerr << "operator /= (): Matrix has no data" << endl;
+		exit(0);
+	}
+
+	if(row != M.row || col != M.col)
+	{
+		cerr << "operator /= (): Matrix dimension do not match" << endl;
+		exit(0);
+	}
+
+	for(int i = 0; i < row; i++)
+	{
+		for(int j = 0; j < col; j++)
+		{
+			if(M.data[i][j] == 0)
+			{
+				cerr << "operator /= (): Matrix has zero element" << endl;
+				exit(0);
+			}
+			data[i][j] /= M.data[i][j];
 		}
 	}
 	return *this;
@@ -384,6 +518,35 @@ double** MReadFile(const char filename[], const int& row, const int& col)
 	return data;
 }
 
+double** MReadFileBin(const char filename[], const int& row, const int& col)
+{
+	if(row <= 0 || col <= 0)
+	{
+		cerr << "MReadFile(): row or col <= 0" << endl;
+		exit(0);
+	}
+	if(filename == 0)
+	{
+		cerr << "MReadFile(): filename error" << endl;
+		exit(0);
+	}
+	ifstream in(filename, ios::binary);
+	cout << "Reading file ... " << endl;
+	double** data = new double*[row];
+	for(int i = 0; i < row; i++)
+	{
+		cout << (i + 1) * 100 / row << " %\r" << flush;
+		data[i] = new double[col];
+		for(int j = 0; j < col; j++)
+		{
+			in >> data[i][j];
+		}
+	}
+	in.close();
+	cout << "Reading file finish." << endl;
+	return data;
+}
+
 void MWriteFile(const char filename[], const Mat& M)
 {
 	if(filename == 0)
@@ -392,6 +555,28 @@ void MWriteFile(const char filename[], const Mat& M)
 		exit(0);
 	}
 	ofstream out(filename);
+	cout << "Writing file ... " << endl;
+	for(int i = 0; i < M.row; i++)
+	{
+		cout << (i + 1) * 100 / M.row << " %\r" << flush;
+		for(int j = 0; j < M.col; j++)
+		{
+			out << M.data[i][j] << "\t";
+		}
+		out << endl;
+	}
+	out.close();
+	cout << "Writing file finish." << endl;
+}
+
+void MWriteFileBin(const char filename[], const Mat& M)
+{
+	if(filename == 0)
+	{
+		cerr << "MWriteFile(): filename error" << endl;
+		exit(0);
+	}
+	ofstream out(filename, ios::binary);
 	cout << "Writing file ... " << endl;
 	for(int i = 0; i < M.row; i++)
 	{
@@ -874,14 +1059,14 @@ Mat MReshape(const Mat& M, const int& row, const int& col)
 		exit(0);
 	}
 	Mat M_res(row, col);
-	for(int i = 0; i < row; i++)
+	for(int i = 0; i < col; i++)
 	{
-		for(int j = 0; j < col; j++)
+		for(int j = 0; j < row; j++)
 		{
-			int index = i * col + j;
-			int oi = index / M.col;
-			int oj = index % M.col;
-			M_res.data[i][j] = M.data[oi][oj];
+			int index = i * row + j;
+			int oi = index / M.row;
+			int oj = index % M.row;
+			M_res.data[j][i] = M.data[oj][oi];
 		}
 	}
 	return M_res;
@@ -905,6 +1090,35 @@ Mat operator / (const Mat& M, const double& s)
 		for(int j = 0; j < M.col; j++)
 		{
 			M_res.data[i][j] = M.data[i][j] / s;
+		}
+	}
+	return M_res;
+}
+
+Mat operator / (const Mat& M, const Mat& s)
+{
+	if(M.data == NULL || s.data == NULL)
+	{
+		cerr << "operator / (): Matrix has no data" << endl;
+		exit(0);
+	}
+	if(s.row != 1 || s.col != 1)
+	{
+		cerr << "operator / (): s is not a scalar" << endl;
+		exit(0);
+
+	}
+	if(s.data[0][0] == 0)
+	{
+		cerr << "operator / (): s = 0" << endl;
+		exit(0);
+	}
+	Mat M_res(M.row, M.col);
+	for(int i = 0; i < M.row; i++)
+	{
+		for(int j = 0; j < M.col; j++)
+		{
+			M_res.data[i][j] = M.data[i][j] / s.data[0][0];
 		}
 	}
 	return M_res;
@@ -1112,5 +1326,169 @@ Mat MOnes(const int& m, const int& n)
 	}
 	return M_res;
 }
+
+Mat MDDivide(const Mat& M1, const Mat& M2)
+{
+	if(M1.data == NULL || M2.data == NULL)
+	{
+		cerr << "MDDivide(): Matrix M1 or M2 has no data" << endl;
+		exit(0);
+	}
+	if(M1.row != M2.row || M1.col != M2.col)
+	{
+		cerr << "MDDivide(): Matrix dimension do not match" << endl;
+		exit(0);
+	}
+	Mat M_res(M1.row, M1.col);
+	for(int i = 0; i < M_res.row; i++)
+	{
+		for(int j = 0; j < M_res.col; j++)
+		{
+			if(M2.data[i][j] == 0)
+			{
+				cerr << "MDDivide(): M2 has zero element" << endl;
+				exit(0);
+			}
+			M_res.data[i][j] = M1.data[i][j] / M2.data[i][j];
+		}
+	}
+	return M_res;
+}
+
+Mat operator <= (const Mat& M, const double& s)
+{
+	if(M.data == NULL)
+	{
+		cerr << "operator <= (): Matrix has no data" << endl;
+		exit(0);
+	}
+	Mat M_res(M.row, M.col);
+	for(int i = 0; i < M.row; i++)
+	{
+		for(int j = 0; j < M.col; j++)
+		{
+			if(M.data[i][j] <= s)
+			{
+				M_res.data[i][j] = 1;
+			}
+		}
+	}
+	return M_res;
+}
+
+Mat MCusum(const Mat& M)
+{
+	if(M.data == NULL)
+	{
+		cerr << "MCusum(): Matrix has no data" << endl;
+		exit(0);
+	}
+	Mat M_res(M.row, M.col);
+	for(int i = 0; i < M.row; i++)
+	{
+		for(int j = 0; j < M.col; j++)
+		{
+			if(i == 0)
+			{
+				M_res.data[i][j] = M.data[i][j];
+			}
+			else
+			{
+				M_res.data[i][j] = M_res.data[i - 1][j] + M.data[i][j];
+			}
+		}
+	}
+	return M_res;
+}
+
+Mat MAbs(const Mat& M)
+{
+	if(M.data == NULL)
+	{
+		cerr << "MAbs(): Matrix has no data" << endl;
+		exit(0);
+	}
+	Mat M_res(M.row, M.col);
+	for(int i = 0; i < M.row; i++)
+	{
+		for(int j = 0; j < M.col; j++)
+		{
+			M_res.data[i][j] = fabs(M.data[i][j]);
+		}
+	}
+	return M_res;
+}
+
+Mat Max(const Mat& M, Mat& order, int type = 1)
+{
+	if(M.data == NULL)
+	{
+		cerr << "Max(): Matrix has no data" << endl;
+		exit(0);
+	}
+	Mat M_res(1, M.col);
+	for(int i = 0; i < M.col; i++)
+	{
+		double dm = M.data[0][i];
+		for(int j = 0; j < M.row; j++)
+		{
+			if(dm < M.data[j][i])
+			{
+				dm = M.data[j][i];
+				order[0][i] = j;
+			}
+		}
+		M_res.data[0][i] = dm;
+	}
+	return M_res;
+}
+
+Mat Max(const Mat& M, int type = 1)
+{
+	if(M.data == NULL)
+	{
+		cerr << "Max(): Matrix has no data" << endl;
+		exit(0);
+	}
+	Mat M_res(1, M.col);
+	for(int i = 0; i < M.col; i++)
+	{
+		double dm = M.data[0][i];
+		for(int j = 0; j < M.row; j++)
+		{
+			if(dm < M.data[j][i])
+			{
+				dm = M.data[j][i];
+			}
+		}
+		M_res.data[0][i] = dm;
+	}
+	return M_res;
+}
+
+Mat MExp(const Mat& M)
+{
+	if(M.data == NULL)
+	{
+		cerr << "MExp(): Matrix has no data" << endl;
+		exit(0);
+	}
+	Mat M_res(M.row, M.col);
+	for(int i = 0; i < M.row; i++)
+	{
+		for(int j = 0; j < M.col; j++)
+		{
+			M_res.data[i][j] = exp(M.data[i][j]);
+			if(M_res.data[i][j] <= 0)
+			{
+				cout << "!" << endl;
+				cout << M.data[i][j] << endl;
+				system("pause");
+			}
+		}
+	}
+	return M_res;
+}
+
 
 #endif
