@@ -45,7 +45,7 @@ Mat sampleIMAGES()
 			}
 		}
 	}
-	M_patches = M_patches -(MSum(MSum(M_patches), 2).data[0][0]) / double(patchSize * patchSize);
+	M_patches = M_patches -(MSum(MSum(M_patches), 2).data[0][0]) / double(patchSize * patchSize * numPatches);
 
 	Mat M_pstd(1, 1);
 	M_pstd = MStd(MReshape(M_patches, patchSize * patchSize * numPatches, 1));
